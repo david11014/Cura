@@ -49,6 +49,7 @@ from . import MachineActionManager
 
 from PyQt5.QtCore import pyqtSlot, QUrl, pyqtSignal, pyqtProperty, QEvent, Q_ENUMS
 from PyQt5.QtGui import QColor, QIcon
+from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtQml import qmlRegisterUncreatableType, qmlRegisterSingletonType, qmlRegisterType
 
 import platform
@@ -131,6 +132,8 @@ class CuraApplication(QtApplication):
         self._camera_animation = None
         self._cura_actions = None
         self._started = False
+
+        self._message_box_callback = None
 
         self._i18n_catalog = i18nCatalog("cura")
 
@@ -241,6 +244,19 @@ class CuraApplication(QtApplication):
 
     def _onEngineCreated(self):
         self._engine.addImageProvider("camera", CameraImageProvider.CameraImageProvider())
+
+    ## A reusable dialogbox
+    #
+    showMessageBox = pyqtSignal(str, str, str, str, int, int, arguments = ["title", "text", "informativeText", "detailedText", "buttons", "icon"])
+    def messageBox(self, title, text, informativeText = "", detailedText = "", buttons = QMessageBox.Ok, icon = QMessageBox.NoIcon, callback = None):
+        self._message_box_callback = callback
+        self.showMessageBox.emit(title, text, informativeText, detailedText, buttons, icon)
+
+    @pyqtSlot(int)
+    def messageBoxClosed(self, button):
+        if self._message_box_callback:
+            self._message_box_callback(button)
+            self._message_box_callback = None
 
     showPrintMonitor = pyqtSignal(bool, arguments = ["show"])
 
